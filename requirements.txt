@@ -1,10 +1,10 @@
 fastapi
-uvicorn
-httpx
+uvicorn[standard]
 asyncpg
+httpx
 python-dotenv
-psycopg2-binary
 sentence-transformers
-transformers
 scikit-learn
 numpy
+psycopg2-binary
+torch --extra-index-url https://download.pytorch.org/whl/cpu
