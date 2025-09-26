@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+asyncpg
+httpx
+python-dotenv
+sentence-transformers
