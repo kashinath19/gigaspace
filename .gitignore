@@ -1,26 +1,8 @@
-# Python cache
+.env
+venv/
+.venv/
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-
-# Virtual environments
-venv/
-ENV/
-.venv/
-env/
-
-# Secrets
-.env
-
-
-# Ignore Docker configs
-docker.yaml
-docker-compose.yaml
-
-# System
 .DS_Store
-Thumbs.db
-
-# VSCode
+.idea/
 .vscode/
