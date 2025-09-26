@@ -1,9 +1,7 @@
-fastapi
-uvicorn[standard]
-asyncpg
-httpx
-python-dotenv
-sentence-transformers
-scikit-learn
-numpy
-psycopg2-binary
+fastapi==0.117.1
+uvicorn==0.37.0
+asyncpg==0.30.0
+python-dotenv==1.1.1
+httpx==0.28.1
+pydantic==2.11.9
+sentence-transformers==5.1.1
