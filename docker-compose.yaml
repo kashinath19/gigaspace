@@ -1,9 +1,8 @@
 version: "3.9"
-
 services:
   db:
     image: pgvector/pgvector:pg17-trixie
-    container_name: gigaspace
+    container_name: gigaspace_db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 9515
@@ -12,6 +11,21 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+
+  web:
+    build: .
+    container_name: gigaspace_web
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://postgres:9515@db:5432/gigaspace
+      GEMINI_API_KEY: ""   # local testing: keep empty or fill if you have it locally
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    command: ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"]
 
 volumes:
   pgdata:
