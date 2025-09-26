@@ -1,0 +1,24 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+ENV/
+.venv/
+env/
+
+# Secrets
+.env
+
+# Databases
+*.sqlite3
+
+# System
+.DS_Store
+Thumbs.db
+
+# VSCode settings
+.vscode/

@@ -1,0 +1,1885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GigaSpace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ✅ Fix overlapping sidebars */
+        :root {
+            --primary-glow: 0 0 15px rgba(139, 92, 246, 0.6), 0 0 5px rgba(139, 92, 246, 0.8);
+            --bg-gradient-start: #020024;
+            --bg-gradient-mid: #0d0f1b;
+            --bg-gradient-end: #001f3f;
+            --glass-bg: rgba(23, 26, 48, 0.5);
+            --glass-border: rgba(167, 139, 250, 0.2);
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0d0f1b; 
+            color: #d1d5db; 
+        }
+
+        #background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-mid), var(--bg-gradient-end));
+            background-size: 400% 400%;
+            animation: gradientShift 25s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .glass-effect {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: background 0.3s ease, border 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        textarea::-webkit-scrollbar, #traits-grid::-webkit-scrollbar, #chat-session-list::-webkit-scrollbar,
+        #traits-grid-simple::-webkit-scrollbar, #traits-grid-advanced::-webkit-scrollbar {
+            width: 6px;
+        }
+        textarea::-webkit-scrollbar-track, #traits-grid::-webkit-scrollbar-track, #chat-session-list::-webkit-scrollbar-track,
+        #traits-grid-simple::-webkit-scrollbar-track, #traits-grid-advanced::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        textarea::-webkit-scrollbar-thumb, #traits-grid::-webkit-scrollbar-thumb, #chat-session-list::-webkit-scrollbar-thumb,
+        #traits-grid-simple::-webkit-scrollbar-thumb, #traits-grid-advanced::-webkit-scrollbar-thumb {
+            background-color: #4f46e5;
+            border-radius: 10px;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .animate-fadeInUp {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+
+        /* Sidebar main container */
+        #sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 260px;
+            height: 100%;
+            background: #111;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            padding: 12px;
+        }
+
+        #sidebar.open {
+            transform: translateX(0);
+        }
+
+        #main-content {
+            margin-left: 0;
+            transition: margin-left 0.3s ease;
+        }
+
+        #sidebar.open ~ #main-content {
+            margin-left: 260px;
+        }
+
+        /* Sidebar menu items */
+        #sidebar .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            color: #d1d5db;
+            text-decoration: none;
+        }
+
+        #sidebar .nav-link:hover {
+            background: #1e293b;
+        }
+
+        .nav-link.active {
+            background-color: rgba(79, 70, 229, 0.4);
+            color: #fff;
+            box-shadow: var(--primary-glow);
+        }
+
+        .character-card {
+            transform-style: preserve-3d;
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .character-card:hover {
+            transform: perspective(1000px) rotateY(5deg) rotateX(10deg) scale(1.05);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5), var(--primary-glow);
+            border-color: rgba(139, 92, 246, 0.8);
+        }
+        .character-card::before { 
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 0, rgba(167, 139, 250, 0.3), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+        .character-card:hover::before {
+            opacity: 1;
+        }
+        #character-grid > .character-card {
+            animation: fadeInUp 0.5s ease-out forwards;
+            opacity: 0; /* Initially hidden for staggered animation */
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #6366f1, #8b5cf6);
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border: none;
+        }
+        .btn-primary:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 8px 25px rgba(124, 58, 237, 0.5);
+        }
+        .btn-primary:active {
+            transform: translateY(0px) scale(0.98);
+        }
+        
+        .btn-primary::after, .google-btn::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+            background-repeat: no-repeat;
+            background-position: 50%;
+            transform: scale(10, 10);
+            opacity: 0;
+            transition: transform .5s, opacity 1s;
+        }
+        .btn-primary:active::after, .google-btn:active::after {
+            transform: scale(0, 0);
+            opacity: .2;
+            transition: 0s;
+        }
+        
+        .form-input {
+            background-color: rgba(17, 24, 39, 0.8);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4), var(--primary-glow);
+            background-color: rgba(31, 41, 55, 0.8);
+        }
+        
+        .trait-checkbox:checked + label {
+            background-color: #4f46e5;
+            color: white;
+            border-color: #6366f1;
+            box-shadow: var(--primary-glow);
+            transform: scale(1.05);
+        }
+        .trait-label {
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .level-selector button.active {
+            background-color: #4f46e5;
+            color: white;
+            border-color: #4f46e5;
+        }
+
+        .chat-container {
+            background: rgba(12, 15, 29, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+        }
+        
+        #chat-messages-container {
+            max-width: 840px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        .message-wrapper {
+            display: flex;
+            gap: 16px;
+            padding: 16px 8px;
+            animation: fadeInUp 0.4s ease-out forwards;
+        }
+
+        .message-wrapper.user-message {
+            background-color: rgba(30, 41, 59, 0.3);
+            flex-direction: row-reverse;
+        }
+        .message-wrapper.model-message {
+            background-color: rgba(17, 24, 39, 0.3);
+        }
+        
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 9999px;
+            object-fit: cover;
+            flex-shrink: 0;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .message-content {
+            padding-top: 4px;
+            color: #e5e7eb;
+            font-size: 1rem;
+            line-height: 1.6;
+            width: 100%;
+        }
+        .message-wrapper.user-message .message-content {
+             text-align: right;
+        }
+
+        .message-content p { margin-bottom: 0.75rem; }
+        .message-content h1, .message-content h2, .message-content h3 { font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; }
+        .message-content ul, .message-content ol { margin-left: 1.5rem; margin-bottom: 0.75rem; }
+        .message-content li { margin-bottom: 0.25rem; }
+        
+        #chat-input-area {
+            position: relative;
+            max-width: 840px;
+            margin: 0 auto;
+        }
+
+        #chat-input {
+            background-color: rgba(30, 41, 59, 0.8);
+            border: 1px solid #4b5563;
+            border-radius: 12px;
+            padding: 14px 56px 14px 20px;
+            color: white;
+            font-size: 1rem;
+            width: 100%;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        #chat-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+        }
+
+        #send-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #4f46e5;
+            transition: background-color 0.2s;
+        }
+        #send-btn:hover { background-color: #6366f1; }
+        
+        .session-item.active {
+            background-color: rgba(79, 70, 229, 0.8);
+            color: white;
+            font-weight: 600;
+            box-shadow: var(--primary-glow);
+        }
+        
+        #language-selector {
+            background-color: rgba(31, 41, 55, 0.8);
+            border: 1px solid var(--glass-border);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            color: #d1d5db;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        #language-selector:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
+        }
+        #language-selector option {
+            background-color: #1f2937;
+            color: #d1d5db;
+        }
+
+        .loader-container { display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .loader-dot { width: 12px; height: 12px; border-radius: 50%; background-color: #8b5cf6; animation: pulse 1.4s infinite ease-in-out both; }
+        .loader-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loader-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes pulse {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+            40% { transform: scale(1.0); opacity: 1; }
+        }
+        
+       .typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  width: fit-content;
+  margin-left: 8px; /* push it slightly right */
+  animation: fadeIn 0.2s ease-in;
+}
+
+.typing-indicator span {
+  display: block;
+  width: 6px;
+  height: 6px;
+  background: #ccc;
+  border-radius: 50%;
+  animation: bounce 1.2s infinite;
+}
+
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+        .notification { transition: opacity 0.5s, transform 0.5s; font-weight: 500; }
+        
+        #creator-choice > div > div { animation: fadeInUp 0.5s ease-out forwards; opacity: 0; }
+        #creator-choice > div > div:nth-child(1) { animation-delay: 0.1s; }
+        #creator-choice > div > div:nth-child(2) { animation-delay: 0.2s; }
+
+        .chat-sidebar {
+            width: 260px;
+            transition: transform 0.3s ease;
+            background: rgba(12, 15, 29, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-right: 1px solid var(--glass-border);
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 30;
+        }
+
+        .chat-sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row min-h-screen">
+    <div id="background-animation"></div>
+    
+    <!-- Login overlay -->
+    <div id="login-overlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[100]">
+        <div class="glass-effect p-8 rounded-2xl shadow-xl text-center w-full max-w-sm">
+            <h2 class="text-3xl font-bold text-white mb-2">Welcome to GigaSpace</h2>
+            <p class="text-gray-400 mb-6">Sign in to create and chat with AI characters.</p>
+            <button id="google-signin-btn" class="google-btn w-full flex items-center justify-center bg-white text-gray-800 font-semibold py-3 px-4 rounded-lg hover:bg-gray-200 transition">
+                <svg class="w-6 h-6 mr-3" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></svg>
+                Sign in with Google
+            </button>
+        </div>
+    </div>
+
+    <!-- Hamburger button -->
+    <button id="open-sidebar-btn" class="fixed top-4 left-4 z-40 text-white bg-slate-800/80 backdrop-blur-sm p-2 rounded-md">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+        </svg>
+    </button>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-slate-900 transform -translate-x-full transition-transform duration-300 ease-in-out z-50 p-4 md:p-6 flex flex-col justify-between">
+        <div class="relative">
+            <!-- Close button (X) -->
+            <button id="close-sidebar-btn" class="absolute top-4 right-4 text-white p-2 rounded-md hover:bg-slate-700/80">
+                ✕
+            </button>
+
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9.75 19.5M14.25 17L14.25 19.5M10.5 12V15M13.5 12V15M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h1 class="text-white text-2xl font-bold">GigaSpace</h1>
+                </div>
+            </div>
+
+            <!-- Nav links -->
+            <nav class="space-y-2">
+                <!-- Discover -->
+                <a href="#" id="discover-btn" data-view="discover"
+                   class="nav-link flex items-center space-x-3 p-3 rounded-lg text-gray-300 hover:text-white font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Discover</span>
+                </a>
+
+                <!-- Create Character -->
+                <a href="#" id="create-character-btn" data-view="create"
+                   class="nav-link flex items-center space-x-3 p-3 rounded-lg text-gray-300 hover:text-white font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                    </svg>
+                    <span>Create Character</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- User profile + logout -->
+        <div class="mt-8 border-t border-slate-700/50 pt-4">
+            <div id="user-profile" class="hidden items-center space-x-3"></div>
+            <div class="mt-4">
+                <button id="logout-btn" class="hidden w-full flex items-center justify-center space-x-2 text-sm bg-red-800/50 hover:bg-red-700/80 text-white font-semibold py-2 px-3 rounded-lg transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Update main content styles -->
+    <main class="flex-1 overflow-y-auto no-scrollbar ml-0">
+         <div id="main-content" class="p-4 md:p-8 h-full">
+            </div>
+    </main>
+    
+    <div id="notification" class="fixed bottom-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transform translate-y-2"></div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
+
+        // IMPORTANT: Replace with your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDqrYThyN0ixii73pL5m2ONcLuV0xempco",
+            authDomain: "gigaspace86.firebaseapp.com",
+            projectId: "gigaspace86",
+            storageBucket: "gigaspace86.appspot.com",
+            messagingSenderId: "574769855086",
+            appId: "1:574769855086:web:b1afc9b2a3869692c4847f",
+            measurementId: "G-S34MQ56N74"
+        };
+        const BACKEND_URL = 'http://localhost:8000';
+
+        let auth, userId = null, currentUser = null, currentView = 'discover', selectedCharacter = null;
+        let chatMessages = [], allCharacters = [];
+        let isLoading = false, errorMessage = null;
+        let currentSessionId = null;
+
+       function render() {
+    const mainContent = document.getElementById("main-content");
+    console.log("Rendering main content.");
+
+    // Update sidebar active link
+    document.querySelectorAll(".nav-link").forEach(link => link.classList.remove("active"));
+    const activeLink = document.querySelector(`.nav-link[data-view="${currentView}"]`);
+    if (activeLink) activeLink.classList.add("active");
+
+    // ✅ Do NOT block UI on error
+    if (errorMessage) {
+        console.warn("Non-blocking render error:", errorMessage);
+        // optionally show a toast/notification instead of blocking
+    }
+
+    if (currentView === "discover") {
+        renderDiscoverView(mainContent);
+    } else if (currentView === "create") {
+        renderCreateView(mainContent);
+    } else if (currentView === "chat" && selectedCharacter) {
+        renderChatView(mainContent);
+    }
+}
+function renderDiscoverView(container) {
+    console.log("Rendering discover view.");
+    container.innerHTML = `
+        <div class="w-full rounded-2xl overflow-hidden shadow-xl relative mb-8 animate-fadeInUp" style="animation-delay: 0.1s;">
+            <img src="https://placehold.co/1200x300/0d0f1b/8b5cf6?text=GigaSpace" class="w-full h-auto object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0d0f1b] via-[#0d0f1b]/70 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 p-6 md:p-12 text-white">
+                <h2 class="text-4xl md:text-5xl font-bold mb-2">GigaSpace</h2>
+                <p class="text-lg md:text-xl text-gray-300 max-w-2xl">Chat with your custom AI characters and legendary figures.</p>
+            </div>
+        </div>
+        <section class="animate-fadeInUp" style="animation-delay: 0.2s;">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl md:text-3xl font-bold text-white">Discover</h2>
+                <div class="flex items-center space-x-4">
+                    <span id="character-count" class="text-sm text-gray-400">${allCharacters.length} characters</span>
+                </div>
+            </div>
+            <div id="character-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+        </section>
+    `;
+
+    const characterGrid = document.getElementById('character-grid');
+
+    // ✅ Always add "Create New Character"
+    const createCard = document.createElement('div');
+    createCard.className = "character-card cursor-pointer p-6 rounded-2xl flex flex-col items-center justify-center text-center border-2 border-dashed border-indigo-500/50 hover:border-indigo-400 glass-effect";
+    createCard.innerHTML = `
+        <div class="bg-indigo-500/20 p-4 rounded-full text-indigo-400 mb-4 border border-indigo-500/30">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-white">Create New Character</h3>
+        <p class="text-sm text-gray-400 mt-2">Design and save a new AI persona for yourself or others to chat with.</p>
+    `;
+    createCard.addEventListener('click', () => navigateTo('create'));
+    characterGrid.appendChild(createCard);
+
+    // ✅ If no characters exist → stop here (only Create card is shown, like your image)
+    if (allCharacters.length === 0) return;
+
+    // ✅ Otherwise render characters
+    allCharacters.forEach((char, index) => {
+        const card = document.createElement('div');
+        card.className = "character-card glass-effect p-6 rounded-2xl shadow-lg flex flex-col space-y-4";
+        const charName = char.char_name;
+        const imageUrl = char.image || `https://placehold.co/64x64/a5b4fc/1f2937?text=${charName.substring(0,2)}`;
+        card.innerHTML = `
+            <div class="flex items-center space-x-4">
+                <img src="${imageUrl}" alt="${charName}" class="rounded-full w-16 h-16 object-cover border-2 border-indigo-400/50">
+                <div>
+                    <h3 class="text-xl font-semibold text-white">${charName}</h3>
+                    <p class="text-sm text-gray-400">${char.description || 'A custom character.'}</p>
+                </div>
+            </div>
+            <div class="flex-grow"></div>
+            <button class="w-full btn-primary text-white font-semibold py-2 px-4 rounded-lg start-chat-btn">Start Chat</button>
+        `;
+        card.querySelector('.start-chat-btn').addEventListener('click', () => startChat(char));
+        characterGrid.appendChild(card);
+    });
+}
+
+
+
+       function renderChatView(container) {
+    container.innerHTML = `
+        <div class="flex h-[calc(100vh-4rem)] rounded-2xl shadow-md chat-container animate-fadeInUp">
+            <div id="chat-sidebar" class="chat-sidebar">
+                <div class="p-4 border-b border-slate-700/50">
+                    <div class="flex items-center justify-between mb-4">
+                        <button id="back-to-discover-btn" class="text-gray-400 hover:text-white flex items-center text-sm transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                            Back
+                        </button>
+                        <button id="toggle-sidebar-btn" class="text-gray-400 hover:text-white p-1 rounded">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                    </div>
+                    <button id="new-chat-btn" class="w-full flex items-center justify-center btn-primary text-white font-semibold py-2 px-3 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        New Chat
+                    </button>
+                </div>
+                <div class="flex-1 overflow-y-auto">
+                    <div class="p-2">
+                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">Chat History</h3>
+                        <div id="chat-session-list" class="space-y-1">
+                            <!-- Chat sessions will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col">
+                <!-- ✅ Updated header with rename button -->
+                <div id="chat-area-header" class="flex items-center justify-between p-4 border-b border-slate-700/50">
+                    <div id="chat-header-container" class="flex items-center">
+                        <span id="chat-header" class="font-semibold text-lg"></span>
+                        <button id="rename-chat-btn" class="ml-2 text-sm text-gray-400 hover:text-white">✎ Rename</button>
+                    </div>
+                </div>
+
+                <div id="chat-messages" class="flex-1 p-2 overflow-y-auto no-scrollbar">
+                    <div id="chat-messages-container" class="space-y-4"></div>
+                </div>
+
+                <div id="chat-input-container" class="p-4 pt-2 border-t border-slate-700/50" style="display: none;">
+                    <div id="chat-input-area">
+                        <form id="chat-form">
+                            <input type="text" id="chat-input" placeholder="Type your message..." autocomplete="off">
+                            <button type="submit" id="send-btn" title="Send message">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+
+            
+            fetch(`${BACKEND_URL}/api/characters/${selectedCharacter.cid}/meta?user_id=${userId}`)
+                .then(resp => resp.ok ? resp.json() : null)
+                .then(meta => {
+                   if (meta && meta.is_creator) {
+                        document.getElementById("chat-area-header").innerHTML = `
+                            <h2 class="text-white font-semibold">Chat with ${meta.char_name}</h2>
+                            <span class="text-xs text-purple-400">You are the creator — you can chat & teach me</span>
+                        `;
+                        document.getElementById("chat-input-container").style.display = "block";
+                    } else if (meta && !meta.is_creator) {
+                        document.getElementById("chat-area-header").innerHTML = `
+                            <h2 class="text-white font-semibold">Chat with ${meta.char_name}</h2>
+                        `;
+                        document.getElementById("chat-input-container").style.display = "block";
+                    } else {
+                        document.getElementById("chat-area-header").innerHTML = `
+                            <h2 class="text-white font-semibold">Chat</h2>
+                        `;
+                        document.getElementById("chat-input-container").style.display = "block";
+                    }
+                })
+                .catch(() => {
+                    document.getElementById("chat-area-header").innerHTML =
+                        `<h2 class="text-white font-semibold">Chat</h2>`;
+                    document.getElementById("chat-input-container").style.display = "block";
+                });
+
+            initializeChatView();
+        }
+        
+        function renderCreateView(container) {
+            container.innerHTML = `
+            <div class="w-full max-w-4xl mx-auto glass-effect rounded-2xl shadow-2xl p-6 md:p-8 space-y-6 animate-fadeInUp">
+                <header>
+                    <h1 class="text-3xl font-bold text-center text-indigo-400">Standard Character Creator</h1>
+                    <p class="text-center text-gray-400 mt-2">Craft a unique personality by selecting traits to generate a tailored interview, then answer the questions to bring your character to life.</p>
+                </header>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div><label for="characterNameSimple" class="block text-sm mb-1">Name</label><input type="text" id="characterNameSimple" class="form-input w-full rounded-lg p-2" required></div>
+                    <div><label for="characterGenderSimple" class="block text-sm mb-1">Gender</label><input type="text" id="characterGenderSimple" class="form-input w-full rounded-lg p-2"></div>
+                    <div><label for="characterDOBSimple" class="block text-sm mb-1">Date of Birth</label><input type="date" id="characterDOBSimple" class="form-input w-full rounded-lg p-2"></div>
+                </div>
+                <div>
+                    <label class="block text-sm">1. Select Core Traits (3 or more)</label>
+                    <div id="traits-grid-simple" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 max-h-64 overflow-y-auto p-3 glass-effect rounded-lg mt-2"></div>
+                </div>
+                <div id="confirm-traits-container-simple" class="text-center mt-2 hidden">
+                    <button id="generateQuestionsBtnSimple" class="btn-primary text-white px-8 py-2 rounded-lg font-semibold">Next: Answer Interview</button>
+                </div>
+                <div id="interview-section-simple" class="hidden space-y-4">
+                    <label class="block text-sm">2. Answer the Interview</label>
+                    <div id="interview-loader-simple" class="text-center p-4 hidden">
+                         <div class="loader-container"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>
+                         <p class="mt-2 text-sm text-gray-400">Generating questions...</p>
+                    </div>
+                    <div id="questions-area-simple" class="space-y-4"></div>
+                </div>
+                <div class="text-center pt-4">
+                    <button id="saveButtonSimple" class="btn-primary text-white px-8 py-3 rounded-lg font-bold flex items-center justify-center min-w-[180px]">
+                        <span class="btn-text">Create Character</span>
+                        <div class="loader-container hidden"><div class="loader-dot bg-white"></div><div class="loader-dot bg-white"></div><div class="loader-dot bg-white"></div></div>
+                    </button>
+                </div>
+                <div id="success-container-simple" class="hidden text-center"><h3 class="text-xl font-bold text-green-400">Character Saved!</h3><p>Redirecting...</p></div>
+            </div>
+            `;
+            initializeSimpleCreator();
+        }
+        
+        function initializeSimpleCreator() {
+            const traits = ['Adaptable', 'Aggressive', 'Ambitious', 'Analytical', 'Approachable', 'Arrogant', 'Authentic', 'Brave', 'Broad-minded', 'Calm', 'Caring', 'Casual', 'Charismatic', 'Competitive', 'Composed', 'Confident', 'Consistent', 'Controlling', 'Cooperative', 'Creative', 'Critical', 'Curious', 'Decisive', 'Defensive', 'Determined', 'Diplomatic', 'Disciplined', 'Dominating', 'Energetic', 'Enthusiastic', 'Extroverted', 'Flexible', 'Focused', 'Friendly', 'Genuine', 'Grounded', 'Honest', 'Humble', 'Imaginative', 'Impatient', 'Impulsive', 'Inconsistent', 'Independent', 'Innovative', 'Inquisitive', 'Insecure', 'Insightful', 'Inspiring', 'Intelligent', 'Introverted', 'Inventive', 'Jealous', 'Joyful', 'Judgmental', 'Knowledgeable', 'Lazy', 'Logical', 'Loyal', 'Manipulative', 'Mature', 'Mentor-like', 'Methodical', 'Moody', 'Nostalgic', 'Observant', 'Open-minded', 'Optimistic', 'Organized', 'Overconfident', 'Overthinking', 'Passionate', 'Patient', 'Perceptive', 'Perfectionist', 'Persistent', 'Pessimistic', 'Possessive', 'Practical', 'Professional', 'Proud', 'Rational', 'Reactive', 'Relaxed', 'Reliable', 'Reserved', 'Resilient', 'Respectful', 'Responsible', 'Rude', 'Scholarly', 'Selfish', 'Sensitive', 'Sentimental', 'Short-tempered', 'Sociable', 'Spontaneous', 'Stable', 'Strategic', 'Stubborn', 'Supportive', 'Systematic', 'Tactful', 'Thorough', 'Thoughtful', 'Tolerant', 'Visionary', 'Vulnerable', 'Wonder-driven'].sort();
+            const traitsGrid = document.getElementById('traits-grid-simple');
+            const confirmTraitsContainer = document.getElementById('confirm-traits-container-simple');
+            const generateQuestionsBtn = document.getElementById('generateQuestionsBtnSimple');
+            const saveButton = document.getElementById('saveButtonSimple');
+            const selectedTraits = new Map();
+
+            traits.forEach(trait => {
+                const traitContainer = document.createElement('div');
+                traitContainer.innerHTML = `<input type="checkbox" id="trait-simple-${trait}" value="${trait}" class="trait-checkbox hidden"><label for="trait-simple-${trait}" class="trait-label cursor-pointer block text-center w-full text-sm border border-gray-600 rounded-full px-3 py-1 hover:bg-gray-700">${trait}</label><div id="level-selector-simple-${trait}" class="level-selector hidden mt-2 flex justify-center space-x-1"><button data-level="Low" class="level-btn text-xs px-2 py-0.5 rounded-full border">Low</button><button data-level="Medium" class="level-btn text-xs px-2 py-0.5 rounded-full border active">Medium</button><button data-level="High" class="level-btn text-xs px-2 py-0.5 rounded-full border">High</button></div>`;
+                traitsGrid.appendChild(traitContainer);
+                const levelSelector = traitContainer.querySelector(`#level-selector-simple-${trait}`);
+                levelSelector.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'BUTTON') {
+                        selectedTraits.set(trait, e.target.dataset.level);
+                        levelSelector.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
+                        e.target.classList.add('active');
+                    }
+                });
+            });
+            
+            traitsGrid.addEventListener('change', (e) => {
+                if (e.target.type === 'checkbox') {
+                    const trait = e.target.value;
+                    const levelSelector = document.getElementById(`level-selector-simple-${trait}`);
+                    if (e.target.checked) {
+                        selectedTraits.set(trait, 'Medium');
+                        levelSelector.classList.remove('hidden');
+                    } else {
+                        selectedTraits.delete(trait);
+                        levelSelector.classList.add('hidden');
+                    }
+                    confirmTraitsContainer.classList.toggle('hidden', selectedTraits.size < 3);
+                }
+            });
+
+            let interviewQuestions = [];
+            let interviewAnswers = [];
+            let currentStep = 0;
+
+            generateQuestionsBtn.addEventListener('click', async () => {
+                document.getElementById('interview-section-simple').classList.remove('hidden');
+                document.getElementById('interview-loader-simple').classList.remove('hidden');
+                const traitsPayload = Array.from(selectedTraits.entries()).map(([trait, level]) => ({ trait, level }));
+                try {
+                    const response = await fetch(`${BACKEND_URL}/api/generate-questions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ traits: traitsPayload }) });
+                    if (!response.ok) throw new Error('Failed to generate interview questions.');
+                    const data = await response.json();
+                    document.getElementById('interview-loader-simple').classList.add('hidden');
+                    interviewQuestions = data.questions;
+                    interviewAnswers = Array(interviewQuestions.length).fill('');
+                    currentStep = 0;
+                    showInterviewStep();
+                } catch (error) {
+                    showNotification(error.message, 'error');
+                }
+            });
+            
+            function showInterviewStep() {
+                const questionsArea = document.getElementById('questions-area-simple');
+                const progressBar = `
+                    <div class="mb-4 text-center">
+                        <span class="font-semibold text-indigo-400">Step ${currentStep + 1} of ${interviewQuestions.length}</span>
+                        <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                            <div class="bg-indigo-500 h-2 rounded-full" style="width: ${(currentStep + 1) / interviewQuestions.length * 100}%"></div>
+                        </div>
+                    </div>
+                `;
+                questionsArea.innerHTML = `
+                    ${progressBar}
+                    <div>
+                        <label for="answer-simple-step" class="block text-sm mb-2">${interviewQuestions[currentStep]}</label>
+                        <textarea id="answer-simple-step" class="interview-answer-simple w-full form-input rounded-lg p-2" rows="3">${interviewAnswers[currentStep]}</textarea>
+                    </div>
+                    <div class="flex justify-between mt-4">
+                        <button id="backStepBtn" class="btn-primary px-4 py-2 rounded-lg" ${currentStep === 0 ? 'disabled' : ''}>Back</button>
+                        ${currentStep < interviewQuestions.length - 1
+                            ? `<button id="nextStepBtn" class="btn-primary px-4 py-2 rounded-lg">Next</button>`
+                            : `<button id="saveButtonSimple" class="btn-primary px-8 py-2 rounded-lg font-semibold">Create Character</button>`
+                        }
+                    </div>
+                `;
+
+                document.getElementById('answer-simple-step').addEventListener('input', (e) => {
+                    interviewAnswers[currentStep] = e.target.value;
+                });
+
+                document.getElementById('backStepBtn').addEventListener('click', () => {
+                    if (currentStep > 0) {
+                        currentStep--;
+                        showInterviewStep();
+                    }
+                });
+
+                if (currentStep < interviewQuestions.length - 1) {
+                    document.getElementById('nextStepBtn').addEventListener('click', () => {
+                        if (!interviewAnswers[currentStep].trim()) {
+                            showNotification('Please answer the question before proceeding.', 'error');
+                            return;
+                        }
+                        currentStep++;
+                        showInterviewStep();
+                    });
+                } else {
+                    document.getElementById('saveButtonSimple').addEventListener('click', async () => {
+                        const traits = Array.from(selectedTraits.keys()).map(t => typeof t === "string" ? t : t.trait);
+                        const questions = interviewAnswers.map(q => typeof q === "string" ? q : q.question);
+
+                        const name = document.getElementById('characterNameSimple').value;
+                        const gender = document.getElementById('characterGenderSimple').value || null;
+                        const dob = document.getElementById('characterDOBSimple').value || null;
+
+                        const payload = {
+                            uid: currentUser.uid,
+                            char_name: name,
+                            gender,
+                            dob,
+                            traits,
+                            questions
+                        };
+
+                        console.log("Sending payload:", JSON.stringify(payload, null, 2));
+
+                        if (!name || !questions || traits.length < 3) { 
+                            showNotification('Please provide a name, select at least 3 traits, and answer the interview questions.', 'error'); 
+                            return; 
+                        }
+
+                        setLoadingState(saveButton, true);
+                        try {
+                            const response = await fetch(`${BACKEND_URL}/api/characters`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(payload)
+                            });
+                            const result = await response.json();
+                            if (!response.ok) throw new Error(result.detail || 'Failed to save character.');
+                            document.getElementById('success-container-simple').classList.remove('hidden');
+                            setTimeout(() => navigateTo('discover'), 2500);
+                        } catch (error) {
+                            showNotification(error.message, 'error');
+                        } finally {
+                            setLoadingState(saveButton, false);
+                        }
+                    });
+                }
+            }
+        }
+        
+        function renderChatMessages() {
+            const messagesContainer = document.getElementById('chat-messages-container');
+            const chatScroller = document.getElementById('chat-messages');
+            if (!messagesContainer || !chatScroller) return;
+
+            const isAtBottom = chatScroller.scrollHeight - chatScroller.scrollTop - chatScroller.clientHeight < 100;
+
+            const userAvatarUrl = currentUser?.photoURL || `https://i.pravatar.cc/32?u=${userId}`;
+            const characterAvatarUrl = selectedCharacter?.image || `https://placehold.co/32x32/a5b4fc/1f2937?text=${selectedCharacter.char_name.substring(0,2)}`;
+
+            if (chatMessages.length === 0 && !selectedCharacter?.isCreator) {
+                messagesContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-center text-gray-500 p-8">
+                        <img src="${characterAvatarUrl}" class="w-24 h-24 rounded-full mb-4 object-cover border-4 border-slate-700/50">
+                        <h2 class="text-2xl font-bold text-gray-300">Chat with ${selectedCharacter.char_name}</h2>
+                        <p>Start your conversation below.</p>
+                    </div>`;
+                return;
+            }
+
+            if (chatMessages.length === 0) {
+                messagesContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-center text-gray-500 p-8">
+                        <img src="${characterAvatarUrl}" class="w-24 h-24 rounded-full mb-4 object-cover border-4 border-slate-700/50">
+                        <h2 class="text-2xl font-bold text-gray-300">Chat with ${selectedCharacter.char_name}</h2>
+                        <p>Start your conversation below.</p>
+                    </div>`;
+                return;
+            }
+
+            const escapeHTML = str => str.replace(/[&<>"']/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[tag] || ''));
+
+            const messageHtml = chatMessages.map((msg) => {
+                const avatarUrl = msg.role === 'user' ? userAvatarUrl : characterAvatarUrl;
+                const messageText = msg.parts?.[0]?.text || msg.message || "";
+
+                return `
+                <div class="message-wrapper ${msg.role === 'model' ? 'model-message' : 'user-message'}">
+                    <img src="${avatarUrl}" alt="${msg.role} avatar" class="message-avatar">
+                    <div class="message-content">
+                        ${escapeHTML(messageText)}
+                        ${msg.role === 'model' ? `
+                            <div class="flex items-center justify-end space-x-2 mt-2">
+                                <button class="feedback-btn p-1 rounded hover:bg-slate-700/50 transition-colors 
+                                        ${msg.feedback === true ? 'text-green-400' : 'text-gray-400'}" 
+                                        data-message-id="${msg.id}" 
+                                        data-feedback="true" title="Thumbs up">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                              d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                                    </svg>
+                                </button>
+                                <button class="feedback-btn p-1 rounded hover:bg-slate-700/50 transition-colors 
+                                        ${msg.feedback === false ? 'text-red-400' : 'text-gray-400'}"
+                                        data-message-id="${msg.id}"
+                                        data-feedback="false" title="Thumbs down">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                              d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2h3" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            chatScroller.innerHTML = '';
+            messagesContainer.innerHTML = messageHtml;
+            chatScroller.appendChild(messagesContainer);
+
+            if (isAtBottom || chatMessages.length <= 1) {
+                chatScroller.scrollTop = chatScroller.scrollHeight;
+            }
+        }
+
+        function updateChatUI(mode, data = null) {
+            const chatHeader = document.getElementById("chat-header");
+            const messagesContainer = document.getElementById("chat-messages-container");
+
+            if (!chatHeader || !messagesContainer) return;
+
+            const isCreator = (selectedCharacter && selectedCharacter.uid && selectedCharacter.uid === userId);
+
+            if (mode === "placeholder") {
+                if (!isCreator) {
+                    chatHeader.innerText = `Chat with ${selectedCharacter.char_name}`;
+                    messagesContainer.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-center text-gray-500 p-8">
+                            <img src="${selectedCharacter.image || 
+                                `https://placehold.co/96x96/a5b4fc/1f2937?text=${selectedCharacter.char_name.substring(0,2)}`}" 
+                                 class="w-24 h-24 rounded-full mb-4 object-cover border-4 border-slate-700/50">
+                            <h2 class="text-2xl font-bold text-gray-300">Chat with ${selectedCharacter.char_name}</h2>
+                            <p>Start your conversation below.</p>
+                        </div>
+                    `;
+                } else {
+                    chatHeader.innerText = `${selectedCharacter.char_name}`;
+                    messagesContainer.innerHTML = `<div class="text-gray-500 p-4">Waiting for model response...</div>`;
+                }
+                return;
+            }
+
+            if (mode === "history") {
+                if (!Array.isArray(data) || data.length === 0) {
+                    updateChatUI("placeholder");
+                    return;
+                }
+
+                messagesContainer.innerHTML = "";
+                data.forEach(msg => {
+                    const div = document.createElement("div");
+                    div.className = `p-2 ${msg.role === "model" ? "text-purple-400" : "text-gray-300"}`;
+                    div.textContent = msg.parts?.[0]?.text || msg.message || "";
+                    messagesContainer.appendChild(div);
+                });
+            }
+        }
+
+        function navigateTo(view) {
+    console.log(`Navigating to view: ${view}`);
+    currentView = view;
+
+    if (view === 'discover') {
+        selectedCharacter = null;
+        chatMessages = [];
+        currentSessionId = null;
+        fetchCharacters();   // ✅ call the right function
+    } else {
+        render();
+    }
+
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.remove('open');
+}
+
+        function getTodayKey(characterId, userId) {
+            const today = new Date().toISOString().split("T")[0];
+            return `session-${characterId}-${userId}-${today}`;
+        }
+
+        async function startChat(character, forceNew = false) {
+            selectedCharacter = character;
+
+            const todayKey = getTodayKey(character.cid, userId);
+            let sessionId = localStorage.getItem(todayKey);
+
+            let isNewSession = false;
+
+            if (forceNew || !sessionId) {
+                sessionId = `sess-${character.cid}-${Date.now()}`;
+                localStorage.setItem(todayKey, sessionId);
+                isNewSession = true;
+            }
+
+            const payload = {
+                character_id: character.cid,
+                user_id: userId,
+                session_id: sessionId,
+                init: isNewSession
+            };
+
+            console.log("Starting chat:", payload);
+
+            try {
+                const resp = await fetch(`${BACKEND_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await resp.json();
+
+                selectedCharacter = {
+                    ...character,
+                    isCreator: data.is_creator
+                };
+
+                if (isNewSession) {
+                    const opener = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (opener) {
+                        chatMessages = [{
+                            id: Date.now(),
+                            role: 'model',
+                            parts: [{ text: opener }],
+                            feedback: null,
+                            timestamp: new Date().toISOString()
+                        }];
+                    } else {
+                        chatMessages = [];
+                    }
+                } else {
+                    const historyResp = await fetch(`${BACKEND_URL}/api/sessions/${sessionId}/messages`);
+                    if (historyResp.ok) {
+                        const historyData = await historyResp.json();
+                        if (historyData && typeof historyData.is_creator !== "undefined") {
+                            selectedCharacter = {
+                                ...selectedCharacter,
+                                isCreator: historyData.is_creator
+                            };
+                        }
+                        chatMessages = historyData.messages || historyData || [];
+                    } else {
+                        chatMessages = [];
+                    }
+                }
+            } catch (e) {
+                console.error("Chat start failed:", e);
+                chatMessages = [];
+            }
+
+            currentSessionId = sessionId;
+            navigateTo('chat');
+
+            setTimeout(() => {
+                renderChatMessages();
+            }, 50);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const newChatBtn = document.getElementById("new-chat-btn");
+            if (newChatBtn) {
+                newChatBtn.addEventListener("click", () => {
+                    if (selectedCharacter) {
+                        startChat(selectedCharacter, true);
+                    }
+                });
+            }
+        });
+/*
+        function initializeChatView() {
+            document.getElementById('back-to-discover-btn')
+                .addEventListener('click', () => navigateTo('discover'));
+            document.getElementById('chat-form')
+                .addEventListener('submit', sendMessage);
+            document.getElementById('new-chat-btn')
+                .addEventListener('click', startNewChat);
+
+            const sessionList = document.getElementById('chat-session-list');
+            sessionList.addEventListener('click', async (e) => {
+                const historyItem = e.target.closest('.chat-history-item');
+                if (historyItem) {
+                    const sessionId = historyItem.dataset.sessionId;
+                    if (sessionId === 'new') {
+                        startNewChat();
+                    } else {
+                        currentSessionId = sessionId;
+                        localStorage.setItem(`activeSessionId_${selectedCharacter.cid}`, sessionId);
+                        await loadChatHistory(sessionId);
+                    }
+                }
+            });
+
+            const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+            const chatSidebar = document.getElementById('chat-sidebar');
+            if (toggleSidebarBtn && chatSidebar) {
+                toggleSidebarBtn.addEventListener('click', () => {
+                    chatSidebar.classList.toggle('collapsed');
+                    localStorage.setItem(
+                        'sidebarCollapsed',
+                        chatSidebar.classList.contains('collapsed')
+                    );
+                });
+                const wasCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                if (wasCollapsed) {
+                    chatSidebar.classList.add('collapsed');
+                }
+            }
+
+            loadAndDisplayChatSessions().then(() => {
+                const isCreator = selectedCharacter?.isCreator;
+                const savedSessionId = localStorage.getItem(`activeSessionId_${selectedCharacter.cid}`);
+
+                if (isCreator) {
+                    if (savedSessionId) {
+                        currentSessionId = savedSessionId;
+                        loadChatHistory(currentSessionId);
+                    } else {
+                        startNewChat();
+                    }
+                } else {
+                  //  if (savedSessionId) {
+                    //    currentSessionId = savedSessionId;
+                      //  loadChatHistory(currentSessionId);
+                    //} else {
+                        currentSessionId = null;
+                        updateChatUI("placeholder");
+                   // }
+                }
+            });
+
+            loadMetaAndSessions();
+
+            document.addEventListener('click', (ev) => {
+                const btn = ev.target.closest('.feedback-btn');
+                if (!btn) return;
+                ev.preventDefault();
+
+                const messageId = Number(btn.dataset.messageId);
+                const feedbackVal = btn.dataset.feedback === 'true';
+                saveFeedback(messageId, feedbackVal);
+            });
+        }
+            */
+function initializeChatView() {
+    document.getElementById('back-to-discover-btn')
+        .addEventListener('click', () => navigateTo('discover'));
+
+    document.getElementById('chat-form')
+        .addEventListener('submit', sendMessage);
+
+    document.getElementById('new-chat-btn')
+        .addEventListener('click', startNewChat);
+
+    const sessionList = document.getElementById('chat-session-list');
+    sessionList.addEventListener('click', async (e) => {
+        const historyItem = e.target.closest('.chat-history-item');
+        if (historyItem) {
+            const sessionId = historyItem.dataset.sessionId;
+            if (sessionId === 'new') {
+                startNewChat();
+            } else {
+                currentSessionId = sessionId;
+                localStorage.setItem(`activeSessionId_${selectedCharacter.cid}`, sessionId);
+                await loadChatHistory(sessionId);
+            }
+        }
+    });
+
+    // Sidebar toggle handling
+    const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+    const chatSidebar = document.getElementById('chat-sidebar');
+    if (toggleSidebarBtn && chatSidebar) {
+        toggleSidebarBtn.addEventListener('click', () => {
+            chatSidebar.classList.toggle('collapsed');
+            localStorage.setItem(
+                'sidebarCollapsed',
+                chatSidebar.classList.contains('collapsed')
+            );
+        });
+        const wasCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (wasCollapsed) {
+            chatSidebar.classList.add('collapsed');
+        }
+    }
+
+    // ✅ Single Rename Chat Button Handler
+document.getElementById("rename-chat-btn")?.addEventListener("click", async () => {
+    const headerEl = document.getElementById("chat-header");
+    if (!headerEl) return;
+
+    const currentTitle = headerEl.innerText || "";
+    const newTitle = prompt("Enter new chat title:", currentTitle);
+
+    if (!newTitle || !currentSessionId) return;
+
+    try {
+        const resp = await fetch(`${BACKEND_URL}/api/sessions/${currentSessionId}/rename`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: newTitle })
+        });
+
+        if (!resp.ok) throw new Error("Failed to update chat title");
+
+        // ✅ Update UI immediately
+        headerEl.innerText = newTitle;
+
+        // ✅ Show success notification
+        showNotification("Chat title updated!", "success");
+
+        // ✅ Refresh sidebar session list so it reflects new title
+        loadAndDisplayChatSessions();
+
+    } catch (err) {
+        console.error("Rename failed:", err);
+        showNotification("Rename failed", "error");
+    }
+});
+
+
+    // Load chat sessions + set correct state
+    loadAndDisplayChatSessions().then(() => {
+        const isCreator = selectedCharacter?.isCreator;
+        const savedSessionId = localStorage.getItem(`activeSessionId_${selectedCharacter.cid}`);
+
+        if (isCreator) {
+            if (savedSessionId) {
+                currentSessionId = savedSessionId;
+                loadChatHistory(currentSessionId);
+            } else {
+                startNewChat();
+            }
+        } else {
+            // Always show placeholder first for non-creators
+            currentSessionId = null;
+            updateChatUI("placeholder");
+        }
+    });
+
+    loadMetaAndSessions();
+
+    // Feedback buttons
+    document.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('.feedback-btn');
+        if (!btn) return;
+        ev.preventDefault();
+
+        const messageId = Number(btn.dataset.messageId);
+        const feedbackVal = btn.dataset.feedback === 'true';
+        saveFeedback(messageId, feedbackVal);
+    });
+}
+
+
+
+        async function loadMetaAndSessions() {
+            try {
+                const resp = await fetch(`${BACKEND_URL}/api/characters/${selectedCharacter.cid}/meta?user_id=${userId}`);
+                if (!resp.ok) throw new Error("Failed to fetch meta");
+                const meta = await resp.json();
+                selectedCharacter.isCreator = meta.is_creator;
+
+                if (meta.is_creator) {
+                    await loadAndDisplayChatSessions();
+                }
+            } catch (e) {
+                if (selectedCharacter?.isCreator) {
+                    await loadAndDisplayChatSessions();
+                }
+            }
+        }
+
+        function formatChatDate(dateStr) {
+            const dateObj = new Date(dateStr);
+            const today = new Date();
+            const yesterday = new Date();
+            yesterday.setDate(today.getDate() - 1);
+
+            if (dateObj.toDateString() === today.toDateString()) return "Today";
+            if (dateObj.toDateString() === yesterday.toDateString()) return "Yesterday";
+
+            return dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        async function loadAndDisplayChatSessions() {
+            const sessionList = document.getElementById('chat-session-list');
+            if (!sessionList || !selectedCharacter) return;
+
+            sessionList.innerHTML = `<div class="text-gray-500 text-center p-4">Loading history...</div>`;
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/users/${userId}/characters/${selectedCharacter.cid}/sessions`);
+                if (!response.ok) throw new Error('Could not load chat history.');
+                const sessions = await response.json();
+
+                const isCreator = selectedCharacter && selectedCharacter.uid && selectedCharacter.uid === userId;
+                let sessionsHtml = "";
+
+                if (isCreator) {
+                    sessionsHtml += `
+                        <div class="chat-history-item ${!currentSessionId ? 'active' : ''}" 
+                             data-session-id="new">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            <span class="truncate">New Chat</span>
+                        </div>
+                    `;
+
+                    sessions.forEach(session => {
+                        sessionsHtml += `
+                            <div class="chat-history-item flex items-center justify-between pl-4 ${session.session_id === currentSessionId ? 'active' : ''}" 
+                                 data-session-id="${session.session_id}">
+                                <div class="flex items-center flex-1 min-w-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                    </svg>
+                                    <span class="truncate chat-title" data-session-id="${session.session_id}">${session.chat_title || 'Chat'}</span>
+                                </div>
+                                <button class="rename-chat-btn p-1 opacity-0 group-hover:opacity-100 transition-opacity" data-session-id="${session.session_id}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        `;
+                    });
+                } else {
+                    if (sessions.length > 0) {
+                        sessions.forEach(session => {
+                            sessionsHtml += `
+                                <div class="chat-history-item flex items-center justify-between pl-4 ${session.session_id === currentSessionId ? 'active' : ''}" 
+                                     data-session-id="${session.session_id}">
+                                    <div class="flex items-center flex-1 min-w-0">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                        </svg>
+                                        <span class="truncate chat-title" data-session-id="${session.session_id}">${session.chat_title || 'Chat with ' + selectedCharacter.char_name}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        sessionsHtml = `
+                            <div class="text-gray-400 text-center p-4">
+                                Chat with ${selectedCharacter.char_name}<br>
+                                <span class="text-sm">Start your conversation below.</span>
+                            </div>
+                        `;
+                    }
+                }
+
+                sessionList.innerHTML = sessionsHtml;
+
+                if (isCreator) {
+                    document.querySelectorAll('.rename-chat-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const sessionId = btn.dataset.sessionId;
+                            const titleSpan = document.querySelector(`.chat-title[data-session-id="${sessionId}"]`);
+                            const currentTitle = titleSpan.textContent;
+
+                            const newTitle = prompt('Enter new chat title:', currentTitle);
+                            if (newTitle && newTitle !== currentTitle) {
+                                renameChatSession(sessionId, newTitle);
+                            }
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading chat sessions:', error);
+                sessionList.innerHTML = `<div class="text-red-400 text-center p-4">${error.message}</div>`;
+            }
+        }
+
+        async function renameChatSession(sessionId, newTitle) {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/sessions/${sessionId}/rename`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: newTitle })
+                });
+
+                if (!response.ok) throw new Error('Failed to rename chat');
+
+                const titleSpan = document.querySelector(`.chat-title[data-session-id="${sessionId}"]`);
+                if (titleSpan) {
+                    titleSpan.textContent = newTitle;
+                }
+            } catch (error) {
+                console.error('Error renaming chat:', error);
+                showNotification('Failed to rename chat', 'error');
+            }
+        }
+
+        document.addEventListener('click', async (e) => {
+            if (e.target.closest('.feedback-btn')) {
+                const btn = e.target.closest('.feedback-btn');
+                const messageId = btn.dataset.messageId;
+                const feedbackValue = btn.dataset.feedback === "true";
+                const msg = chatMessages.find(m => m.id == messageId);
+
+                if (!msg || btn.classList.contains('processing')) return;
+                btn.classList.add('processing');
+
+                let newFeedback = msg.feedback === feedbackValue ? null : feedbackValue;
+
+                const originalFeedback = msg.feedback;
+                msg.feedback = newFeedback;
+                btn.classList.add('opacity-50');
+                renderChatMessages();
+
+                try {
+                    const response = await fetch(`${BACKEND_URL}/api/messages/${messageId}/feedback`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ feedback: newFeedback })
+                    });
+
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.detail || 'Failed to save feedback');
+                    }
+
+                    const result = await response.json();
+                    msg.feedback = result.feedback;
+                    renderChatMessages();
+                    showNotification('Feedback saved successfully!', 'success');
+                } catch (error) {
+                    console.error('Feedback submission failed:', error);
+                    showNotification(error.message, 'error');
+                    msg.feedback = originalFeedback;
+                    renderChatMessages();
+                } finally {
+                    btn.classList.remove('opacity-50', 'processing');
+                }
+            }
+        });
+
+        async function loadChatHistory(sessionId) {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/sessions/${sessionId}/messages`);
+                if (!response.ok) throw new Error("Could not load chat history.");
+                const data = await response.json();
+
+                const raw = Array.isArray(data) ? data : (data.messages || data);
+
+                chatMessages = raw.map(m => ({
+                    id: m.id ?? Date.now(),
+                    role: (m.role === 'model' || m.role === 'assistant') ? 'model' : 'user',
+                    parts: m.parts ?? [{ text: m.message ?? "" }],
+                    feedback: (typeof m.feedback !== 'undefined') ? m.feedback : null,
+                    timestamp: m.timestamp ?? m.time_of_msg ?? null
+                }));
+
+                if (sessionId) localStorage.setItem(`chat_${sessionId}`, JSON.stringify(chatMessages));
+
+                renderChatMessages();
+
+                const isCreator = !!(selectedCharacter && selectedCharacter.uid === userId);
+                if (!isCreator && (!chatMessages || chatMessages.length === 0)) {
+                    updateChatUI("placeholder");
+                } else {
+                    updateChatUI("history", chatMessages);
+                }
+            } catch (err) {
+                console.error("Error loading history:", err);
+                showNotification("Failed to load chat history", "error");
+            }
+        }
+
+        async function saveFeedback(messageId, value) {
+            try {
+                const resp = await fetch(`${BACKEND_URL}/api/messages/${messageId}/feedback`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ feedback: value })
+                });
+                if (!resp.ok) throw new Error("Failed to save feedback");
+                const result = await resp.json();
+                const saved = typeof result.feedback !== "undefined" ? result.feedback : value;
+
+                chatMessages = chatMessages.map(msg => msg.id === messageId ? { ...msg, feedback: saved } : msg);
+
+                if (currentSessionId) {
+                    localStorage.setItem(`chat_${currentSessionId}`, JSON.stringify(chatMessages));
+                }
+
+                renderChatMessages();
+            } catch (err) {
+                console.error("Feedback save failed", err);
+                showNotification("Failed to save feedback", "error");
+            }
+        }
+
+        function startNewChat() {
+            currentSessionId = crypto.randomUUID();
+            chatMessages = [];
+            renderChatMessages();
+
+            const isCreator = (selectedCharacter && selectedCharacter.uid === userId);
+
+            if (!isCreator) {
+                updateChatUI("placeholder");
+                return;
+            }
+
+            const chatHeader = document.getElementById("chat-header");
+            if (chatHeader) {
+                chatHeader.innerText = `${selectedCharacter.char_name}`;
+            }
+
+            updateChatUI("history", []);
+            sendMessage("##INIT_CREATOR##", { init: true });
+
+            localStorage.setItem(`activeSessionId_${selectedCharacter.cid}`, currentSessionId);
+        }
+
+    async function sendMessage(e, opts = {}) {
+    if (e && typeof e.preventDefault === "function") e.preventDefault();
+
+    const input = document.getElementById('chat-input');
+    const messageText = typeof e === "string" ? e : (input ? input.value.trim() : "");
+
+    // --- Ensure session exists ---
+    if (!selectedCharacter || !userId) return;
+    if (!currentSessionId) {
+        console.warn("⚠️ No active session found. Creating new session...");
+        await startNewChat();
+        if (!currentSessionId) {
+            showNotification("Could not create a new chat session.", "error");
+            return;
+        }
+    }
+
+    let msgText = typeof e === "string" ? e : messageText;
+    if (!msgText && !opts.init) return;
+
+    if (input) input.value = '';
+    isLoading = true;
+
+    // --- Push user message to local state ---
+    if (msgText && msgText !== "##INIT_CREATOR##" && !opts.init) {
+        chatMessages.push({ role: 'user', parts: [{ text: msgText }] });
+    }
+    renderChatMessages();
+
+    // ✅ Show typing indicator while waiting
+    showTypingIndicator();
+
+    const payload = {
+        character_id: selectedCharacter.cid,
+        user_id: userId,
+        session_id: currentSessionId,
+        message: msgText,
+        ...opts
+    };
+
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || `API error: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        // ✅ Remove typing indicator once reply arrives
+        hideTypingIndicator();
+
+        // --- Non-creator ephemeral placeholder (allow continuing later) ---
+        if (result.ephemeral && !selectedCharacter.isCreator) {
+            console.info("ℹ️ Ephemeral placeholder shown for non-creator.");
+            updateChatUI("placeholder");
+            return; // Stop processing but don't block future messages
+        }
+
+        // --- AI reply ---
+        const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        const messageId = result.candidates?.[0]?.id;
+
+        if (aiResponse) {
+            chatMessages.push({
+                role: 'model',
+                parts: [{ text: aiResponse }],
+                id: messageId || Date.now(),
+                feedback: null
+            });
+        } else {
+            throw new Error("Invalid API response format");
+        }
+
+    } catch (error) {
+        console.error("Error generating AI response:", error);
+
+        // ✅ Always remove typing indicator on error
+        hideTypingIndicator();
+
+        chatMessages.push({
+            role: 'model',
+            parts: [{ text: '❌ Sorry, I had trouble responding. Please check if the chat server is running correctly.' }]
+        });
+        showNotification(error.message, 'error');
+    } finally {
+        isLoading = false;
+        renderChatMessages();
+
+        // --- Creator only: refresh sessions after first AI reply ---
+        const isCreator = (selectedCharacter && selectedCharacter.uid && selectedCharacter.uid === userId);
+        if (isCreator && chatMessages.filter(m => m.role === 'model').length === 1) {
+            loadAndDisplayChatSessions();
+        }
+
+        // --- Feedback buttons ---
+        document.querySelectorAll('.feedback-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const messageId = btn.dataset.messageId;
+                const feedback = btn.dataset.feedback === "true";
+                try {
+                    await fetch(`${BACKEND_URL}/api/messages/${messageId}/feedback`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ feedback })
+                    });
+
+                    const msg = chatMessages.find(m => m.id == messageId);
+                    if (msg) msg.feedback = feedback;
+                    renderChatMessages();
+                } catch (err) {
+                    console.error("Failed to send feedback:", err);
+                }
+            });
+        });
+    }
+}
+
+
+
+
+   async function fetchCharacters() {
+    if (!userId) {
+        console.log("User ID is null. Not fetching characters.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/characters`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+
+        const data = await response.json();
+        if (!Array.isArray(data)) throw new Error("Backend returned invalid data format for characters.");
+
+        allCharacters = data;   // ✅ always update the global allCharacters
+        console.log("✅ Characters fetched successfully:", allCharacters.length);
+    } catch (error) {
+        // ✅ If API fails → fallback to empty list
+        allCharacters = [];
+        console.error("⚠️ Error fetching characters:", error);
+    } finally {
+        // ✅ Always render discover page, don’t block UI
+        errorMessage = null;
+        render();
+    }
+}
+
+
+        async function syncUserWithBackend(user) {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: user.uid, email: user.email, username: user.displayName })
+                });
+                if (!response.ok) throw new Error('Could not sync user with backend.');
+            } catch (error) {
+                showNotification(error.message, 'error');
+            }
+        }
+        
+        function setLoadingState(button, isLoading) {
+            const btnText = button.querySelector('.btn-text');
+            const loader = button.querySelector('.loader-container');
+            button.disabled = isLoading;
+            if (btnText) btnText.style.display = isLoading ? 'none' : 'inline';
+            if (loader) loader.style.display = isLoading ? 'flex' : 'none';
+        }
+
+        function showNotification(message, type = 'error') {
+            const notificationEl = document.getElementById('notification');
+            notificationEl.textContent = message;
+            notificationEl.className = `fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transform translate-y-2 z-[200] ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
+            requestAnimationFrame(() => notificationEl.classList.remove('opacity-0', 'translate-y-2'));
+            setTimeout(() => notificationEl.classList.add('opacity-0', 'translate-y-2'), 4000);
+        }
+
+        async function signInWithGoogle() {
+            const provider = new GoogleAuthProvider();
+            try { await signInWithPopup(auth, provider); } 
+            catch (error) { showNotification(`Sign-in failed: ${error.message}`, 'error'); }
+        }
+
+        async function appLogout() {
+            try { await signOut(auth); } 
+            catch (error) { showNotification('Could not sign out.', 'error'); }
+        }
+
+        function setUIBasedOnAuthState(user) {
+            const loginOverlay = document.getElementById('login-overlay');
+            const userProfileEl = document.getElementById('user-profile');
+            const logoutBtn = document.getElementById('logout-btn');
+
+            if (user) {
+                loginOverlay.style.display = 'none';
+                currentUser = user;
+                userId = user.uid;
+                userProfileEl.innerHTML = `
+                    <img src="${user.photoURL || `https://placehold.co/40x40/a5b4fc/1f2937?text=${user.displayName.substring(0,1)}`}" class="w-10 h-10 rounded-full">
+                    <div>
+                        <p class="text-white font-semibold text-sm">${user.displayName}</p>
+                        <p class="text-gray-400 text-xs">${user.email}</p>
+                    </div>`;
+                userProfileEl.classList.remove('hidden');
+                userProfileEl.classList.add('flex');
+                logoutBtn.classList.remove('hidden');
+                allCharacters = [];
+                errorMessage = null;
+                syncUserWithBackend(user).then(() => {
+                    console.log("User synced with backend.");
+                    navigateTo('discover');
+                }).catch((err) => {
+                    showNotification("Failed to sync user with backend: " + err.message, 'error');
+                    navigateTo('discover');
+                });
+            } else {
+                loginOverlay.style.display = 'flex';
+                currentUser = null;
+                userId = null;
+                allCharacters = [];
+                console.log("Rendering default view.");
+                render(); 
+                userProfileEl.classList.add('hidden');
+                logoutBtn.classList.add('hidden');
+            }
+        }
+
+        // Check Firebase initialization
+        window.onload = function() {
+            const sidebar = document.getElementById("sidebar");
+            const openSidebarBtn = document.getElementById("open-sidebar-btn");
+            const closeSidebarBtn = document.getElementById("close-sidebar-btn");
+
+            // Fix sidebar navigation button event listeners
+            document.getElementById("discover-btn")?.addEventListener("click", (e) => {
+                e.preventDefault();
+                if (!userId) return;
+                navigateTo("discover");
+            });
+
+            document.getElementById("create-character-btn")?.addEventListener("click", (e) => {
+                e.preventDefault();
+                if (!userId) return;
+                navigateTo("create");
+            });
+
+            // Open sidebar
+            if (openSidebarBtn) {
+                openSidebarBtn.addEventListener("click", () => {
+                    sidebar.classList.add("open");
+                });
+            }
+
+            // Close sidebar
+            if (closeSidebarBtn) {
+                closeSidebarBtn.addEventListener("click", () => {
+                    sidebar.classList.remove("open");
+                });
+            }
+
+            // Close sidebar when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!sidebar.contains(e.target) && 
+                    !openSidebarBtn.contains(e.target) && 
+                    sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                }
+            });
+
+            // Existing Firebase initialization code
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                document.getElementById('google-signin-btn').addEventListener('click', signInWithGoogle);
+                document.getElementById('logout-btn').addEventListener('click', appLogout);
+                onAuthStateChanged(auth, (user) => setUIBasedOnAuthState(user));
+                console.log("Firebase initialized successfully.");
+            } catch (e) {
+                document.body.innerHTML = `<div class="fixed inset-0 bg-slate-900 flex items-center justify-center text-red-400 p-8 text-center">Firebase initialization failed. Ensure your Firebase configuration is correct and reload the page. Error: ${e.message}</div>`;
+                console.error("Firebase Init Error:", e);
+                return;
+            }
+        };
+    </script>
+    <script>
+        // Show typing indicator
+function showTypingIndicator() {
+    const container = document.getElementById("chat-messages-container");
+    if (!container || document.getElementById("typing-indicator")) return;
+
+    const indicator = document.createElement("div");
+    indicator.id = "typing-indicator";
+    indicator.className = "typing-indicator";
+    indicator.innerHTML = "<span></span><span></span><span></span>";
+    container.appendChild(indicator);
+
+    // Auto-scroll down
+    const scroller = document.getElementById("chat-messages");
+    scroller.scrollTop = scroller.scrollHeight;
+}
+
+function hideTypingIndicator() {
+    const indicator = document.getElementById("typing-indicator");
+    if (indicator) indicator.remove();
+}
+
+
+        async function handleCharacterEvolution(characterId, creatorId) {
+            console.info(`🧠 Skipping character evolution for cid=${characterId}, creator_id=${creatorId}.`);
+        }
+    </script>
+</body>
+</html>
