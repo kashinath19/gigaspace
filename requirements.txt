@@ -1,6 +1,10 @@
 fastapi
-uvicorn[standard]
-asyncpg
+uvicorn
 httpx
+asyncpg
 python-dotenv
+psycopg2-binary
 sentence-transformers
+transformers
+scikit-learn
+numpy
