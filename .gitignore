@@ -13,9 +13,6 @@ env/
 # Secrets
 .env
 
-# Ignore database & embedding code
-db.py
-embeddings.py
 
 # Ignore Docker configs
 docker.yaml
