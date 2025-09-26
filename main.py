@@ -88,7 +88,8 @@ origins = [
     "http://localhost",
     "http://localhost:3000",
     "http://127.0.0.1:5500",
-    "https://gigaspace-web.onrender.com"
+    "https://gigaspace-web.onrender.com",
+    "https://gigaspace-frontend-1.onrender.com"
 ]
 
 app.add_middleware(
