@@ -1,9 +1,20 @@
-# Frontend Dockerfile
-# Use an official Nginx image to serve the static files
-FROM nginx:alpine
+# Use slim Python base
+FROM python:3.11-slim
 
-# Copy the build output to the Nginx directory
-COPY ./dist /usr/share/nginx/html
+WORKDIR /app
 
-# Expose port 80
-EXPOSE 80
+# Install system dependencies
+RUN apt-get update && apt-get install -y build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
+
+# Install Python requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy all project files
+COPY . .
+
+# Expose port
+EXPOSE 8000
+
+# Run FastAPI
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
