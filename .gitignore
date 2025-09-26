@@ -13,12 +13,17 @@ env/
 # Secrets
 .env
 
-# Databases
-*.sqlite3
+# Ignore database & embedding code
+db.py
+embeddings.py
+
+# Ignore Docker configs
+docker.yaml
+docker-compose.yaml
 
 # System
 .DS_Store
 Thumbs.db
 
-# VSCode settings
+# VSCode
 .vscode/
