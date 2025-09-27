@@ -34,13 +34,13 @@ DB_SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
     uid TEXT PRIMARY KEY,
     email VARCHAR(255) UNIQUE,
-    username VARCHAR(255),
+    username VARCHAR(255) UNIQUE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS characters (
     cid SERIAL PRIMARY KEY,
-    char_name VARCHAR(255) NOT NULL,
+    char_name VARCHAR(255) NOT NULL UNIQUE,
     uid TEXT REFERENCES users(uid) ON DELETE CASCADE,
     prompt TEXT,
     description TEXT,
